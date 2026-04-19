@@ -1,121 +1,109 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+  import { useEffect, useState } from 'react';
+import TelegramWebApp from '@twa-dev/sdk';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [search, setSearch] = useState('');
+  const [songs, setSongs] = useState([]);
+  const [currentSong, setCurrentSong] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    TelegramWebApp.ready();
+    TelegramWebApp.expand();
+  }, []);
+
+  // Функция поиска (Jamendo API)
+  const searchMusic = async (query) => {
+    if (!query || query.length < 3) return;
+    try {
+      const res = await fetch(
+        `https://jamendo.com{query}`
+      );
+      const data = await res.json();
+      setSongs(data.results || []);
+    } catch (err) {
+      console.error("Ошибка загрузки:", err);
+    }
+  };
+
+  // Авто-поиск при вводе
+  useEffect(() => {
+    const timer = setTimeout(() => searchMusic(search), 600);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Начальный список
+  useEffect(() => {
+    searchMusic("lofi hip hop");
+  }, []);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="min-h-screen bg-[#121212] text-white pb-32">
+      {/* Header */}
+      <div className="p-6 bg-black/50 backdrop-blur-md sticky top-0 z-10 border-b border-white/5">
+        <h1 className="text-2xl font-black text-green-500">MiniSpotify</h1>
+      </div>
 
-      <div className="ticks"></div>
+      {/* Search Input */}
+      <div className="p-4">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Поиск треков..."
+          className="w-full bg-[#242424] p-4 rounded-2xl outline-none focus:ring-2 focus:ring-green-500 transition-all"
+        />
+      </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {/* Song List */}
+      <div className="px-4 space-y-4">
+        {songs.map(song => (
+          <div 
+            key={song.id} 
+            onClick={() => { setCurrentSong(song); setIsPlaying(true); }}
+            className="flex items-center gap-4 bg-[#1e1e1e] p-3 rounded-2xl active:scale-95 transition-transform"
+          >
+            <img src={song.image} className="w-16 h-16 rounded-xl object-cover" alt="cover" />
+            <div className="flex-1 overflow-hidden">
+              <p className="font-bold truncate">{song.name}</p>
+              <p className="text-sm text-gray-400 truncate">{song.artist_name}</p>
+            </div>
+            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-black font-bold">
+              ▶
+            </div>
+          </div>
+        ))}
+      </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {/* Player Bar */}
+      {currentSong && (
+        <div className="fixed bottom-0 left-0 right-0 bg-[#181818] border-t border-white/10 p-4 flex items-center gap-4 shadow-2xl">
+          <img src={currentSong.image} className="w-12 h-12 rounded-lg" alt="now playing" />
+          <div className="flex-1 overflow-hidden">
+            <p className="text-sm font-bold truncate">{currentSong.name}</p>
+            <p className="text-xs text-gray-400 truncate">{currentSong.artist_name}</p>
+          </div>
+          <audio 
+            src={currentSong.audio} 
+            autoPlay 
+            onPlay={() => setIsPlaying(true)} 
+            onPause={() => setIsPlaying(false)}
+            id="audio-player"
+          />
+          <button 
+            onClick={() => {
+              const player = document.getElementById('audio-player');
+              if (isPlaying) player.pause(); else player.play();
+              setIsPlaying(!isPlaying);
+            }}
+            className="w-12 h-12 bg-white rounded-full text-black flex items-center justify-center text-xl"
+          >
+            {isPlaying ? "Ⅱ" : "▶"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;

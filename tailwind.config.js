@@ -2,16 +2,10 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,ts,jsx,xcx}",
   ],
   theme: {
-    extend: {
-      colors: {
-        spotify: "#1DB954",
-        dark: "#121212",
-        card: "#1f1f1f",
-      }
-    },
+    extend: {},
   },
   plugins: [],
 }
